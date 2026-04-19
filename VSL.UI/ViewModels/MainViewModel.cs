@@ -1100,9 +1100,29 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _createProfileCommand.RaiseCanExecuteChanged();
         _deleteProfileCommand.RaiseCanExecuteChanged();
         _saveCommonConfigCommand.RaiseCanExecuteChanged();
+        if (LoadRawJsonCommand is AsyncRelayCommand loadRawJsonCommand)
+        {
+            loadRawJsonCommand.RaiseCanExecuteChanged();
+        }
         _saveRawJsonCommand.RaiseCanExecuteChanged();
+        if (RefreshSavesCommand is AsyncRelayCommand refreshSavesCommand)
+        {
+            refreshSavesCommand.RaiseCanExecuteChanged();
+        }
+        if (CreateSaveCommand is AsyncRelayCommand createSaveCommand)
+        {
+            createSaveCommand.RaiseCanExecuteChanged();
+        }
         _setActiveSaveCommand.RaiseCanExecuteChanged();
         _backupSaveCommand.RaiseCanExecuteChanged();
+        if (RefreshModsCommand is AsyncRelayCommand refreshModsCommand)
+        {
+            refreshModsCommand.RaiseCanExecuteChanged();
+        }
+        if (ImportModZipCommand is AsyncRelayCommand importModZipCommand)
+        {
+            importModZipCommand.RaiseCanExecuteChanged();
+        }
         _toggleSelectedModCommand.RaiseCanExecuteChanged();
         _startServerCommand.RaiseCanExecuteChanged();
         _stopServerCommand.RaiseCanExecuteChanged();
