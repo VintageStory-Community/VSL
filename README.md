@@ -17,21 +17,24 @@ dotnet build VSL.sln -c Release
 
 ## 打包
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1 -Version 1.0.0
-```
+使用 GitHub Actions 工作流：
 
-生成安装包（`setup.exe`）：
+- 工作流文件：`.github/workflows/build-packages.yml`
+- 手动触发：`Actions -> Build Packages -> Run workflow`
+- 手动触发输入：
+  - `version`：版本号（如 `1.1.10`）
+  - `runtime`：运行时（默认 `win-x64`）
+- 产物：
+  - 便携版：`VSL-<version>-<runtime>.zip`
+  - 安装版：`VSL-Setup-<version>-<runtime>.exe`
+  - 校验文件：`SHA256SUMS.txt`
+- 推送标签（如 `v1.1.10`）会自动创建 Release 并上传上述文件。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1 -Version 1.0.0 -CreateInstaller
-```
+## 数据目录策略
 
-说明：
-
-- `-CreateInstaller` 使用 Inno Setup 6 生成安装程序。
-- 需先安装 Inno Setup 6（`ISCC.exe`）。
-- 默认安装目录为 `%LocalAppData%\Programs\VSL`（无需管理员权限）。
+- 便携版：包内包含 `portable.mode` 标记文件，默认使用程序目录下 `workspace`。
+- 安装版：默认使用 `%LocalAppData%\\VSL\\workspace`（通常在 C 盘用户目录）。
+- 卸载安装版时会询问是否删除用户数据（存档、配置、日志）。
 
 ## 关于
 

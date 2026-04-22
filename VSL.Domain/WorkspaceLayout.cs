@@ -4,9 +4,18 @@ namespace VSL.Domain;
 
 public static partial class WorkspaceLayout
 {
+    private static readonly string[] PortableMarkerFileNames =
+    {
+        "portable.mode",
+        "VSL.portable",
+        ".portable"
+    };
+
     private static readonly object StorageSettingsGate = new();
     private static string? _dataRootOverride;
     private static string? _savesRootOverride;
+
+    public static bool IsPortableMode { get; } = DetectPortableMode();
 
     public static string WorkspaceRoot { get; } = ResolveWorkspaceRoot();
 
@@ -93,11 +102,14 @@ public static partial class WorkspaceLayout
 
     private static string ResolveWorkspaceRoot()
     {
-        var candidateRoots = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "workspace"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VSL", "workspace")
-        };
+        var localAppDataWorkspace = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "VSL",
+            "workspace");
+        var portableWorkspace = Path.Combine(AppContext.BaseDirectory, "workspace");
+        var candidateRoots = IsPortableMode
+            ? new[] { portableWorkspace, localAppDataWorkspace }
+            : new[] { localAppDataWorkspace, portableWorkspace };
 
         foreach (var candidate in candidateRoots)
         {
@@ -114,6 +126,36 @@ public static partial class WorkspaceLayout
 
         // Last resort.
         return Path.Combine(Path.GetTempPath(), "VSL", "workspace");
+    }
+
+    private static bool DetectPortableMode()
+    {
+        var envValue = Environment.GetEnvironmentVariable("VSL_PORTABLE");
+        if (IsEnabledFlag(envValue))
+        {
+            return true;
+        }
+
+        foreach (var markerFileName in PortableMarkerFileNames)
+        {
+            var markerPath = Path.Combine(AppContext.BaseDirectory, markerFileName);
+            if (File.Exists(markerPath))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsEnabledFlag(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return value.Trim().ToLowerInvariant() is "1" or "true" or "yes" or "y" or "on";
     }
 
     private static void EnsureStorageRootsExist()

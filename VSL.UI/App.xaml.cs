@@ -14,7 +14,7 @@ public partial class App : System.Windows.Application
 {
     private Mutex? _singleInstanceMutex;
     private ServiceProvider? _serviceProvider;
-    private static readonly string StartupLogPath = Path.Combine(AppContext.BaseDirectory, "logs", "startup.log");
+    private static string StartupLogPath => Path.Combine(WorkspaceLayout.WorkspaceRoot, "logs", "startup.log");
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -26,6 +26,7 @@ public partial class App : System.Windows.Application
         try
         {
             WorkspaceLayout.EnsureWorkspaceExists();
+            WriteStartupLog($"WorkspaceMode = {(WorkspaceLayout.IsPortableMode ? "Portable" : "Installed")}");
             WriteStartupLog($"WorkspaceRoot = {WorkspaceLayout.WorkspaceRoot}");
 
             _singleInstanceMutex = new Mutex(true, "VSL_SINGLE_INSTANCE_MUTEX", out var createdNew);

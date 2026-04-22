@@ -11,7 +11,11 @@
 #endif
 
 #ifndef SourceDir
-  #define SourceDir "..\\dist\\VSL-0.0.0-win-x64"
+  #define SourceDir "..\\artifacts\\publish\\VSL.UI\\win-x64"
+#endif
+
+#ifndef SetupIconFile
+  #define SetupIconFile SourceDir + "\\" + MyAppExeName
 #endif
 
 #define MyAppId "{{DD35AE14-2A20-483D-97A6-BD649EEDEA61}"
@@ -30,6 +34,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={localappdata}\Programs\VSL
 DefaultGroupName=VSL
 UninstallDisplayIcon={app}\{#MyAppExeName}
+SetupIconFile={#SetupIconFile}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
@@ -42,7 +47,6 @@ OutputDir=.
 OutputBaseFilename={#OutputBaseFilename}
 
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
@@ -57,3 +61,28 @@ Name: "{autodesktop}\VSL"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch VSL"; Flags: nowait postinstall skipifsilent
+
+[CustomMessages]
+english.RemoveUserDataPrompt=Do you want to remove VSL user data (profiles, saves, configs, logs)?%n%nData path: %1
+
+[Code]
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DataRoot: string;
+begin
+  if CurUninstallStep <> usPostUninstall then
+  begin
+    exit;
+  end;
+
+  DataRoot := ExpandConstant('{localappdata}\VSL');
+  if not DirExists(DataRoot) then
+  begin
+    exit;
+  end;
+
+  if MsgBox(FmtMessage(CustomMessage('RemoveUserDataPrompt'), [DataRoot]), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+  begin
+    DelTree(DataRoot, True, True, True);
+  end;
+end;

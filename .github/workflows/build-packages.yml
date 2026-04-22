@@ -1,0 +1,206 @@
+name: Build Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without v prefix (example: 1.1.10)"
+        required: true
+        type: string
+      runtime:
+        description: "Runtime identifier"
+        required: true
+        default: "win-x64"
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-packages:
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      CONFIGURATION: Release
+      FRAMEWORK: net9.0-windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Resolve package variables
+        id: vars
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+            $runtime = "${{ inputs.runtime }}"
+          } else {
+            $tagName = "${{ github.ref_name }}"
+            if ($tagName.StartsWith("v")) {
+              $version = $tagName.Substring(1)
+            } else {
+              $version = $tagName
+            }
+            $runtime = "win-x64"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Version cannot be empty."
+          }
+          if ([string]::IsNullOrWhiteSpace($runtime)) {
+            throw "Runtime cannot be empty."
+          }
+
+          $portableDir = "dist/VSL-$version-$runtime"
+          $portableZip = "dist/VSL-$version-$runtime.zip"
+          $installerExe = "dist/VSL-Setup-$version-$runtime.exe"
+          $installerSource = "artifacts/installer-source/VSL-$version-$runtime"
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "runtime=$runtime" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "portable_dir=$portableDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "portable_zip=$portableZip" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "installer_exe=$installerExe" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "installer_source=$installerSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Restore
+        run: dotnet restore VSL.sln
+
+      - name: Publish VSL.UI
+        shell: pwsh
+        run: |
+          $runtime = "${{ steps.vars.outputs.runtime }}"
+          $publishDir = "artifacts/publish/VSL.UI/$runtime"
+          if (Test-Path $publishDir) {
+            Remove-Item -LiteralPath $publishDir -Recurse -Force
+          }
+
+          dotnet publish .\VSL.UI\VSL.UI.csproj `
+            -c $env:CONFIGURATION `
+            -f $env:FRAMEWORK `
+            -r $runtime `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
+            -p:DebugSymbols=false `
+            -p:DebugType=None `
+            -o $publishDir
+
+      - name: Build portable package
+        shell: pwsh
+        run: |
+          $runtime = "${{ steps.vars.outputs.runtime }}"
+          $publishDir = "artifacts/publish/VSL.UI/$runtime"
+          $portableDir = "${{ steps.vars.outputs.portable_dir }}"
+          $portableZip = "${{ steps.vars.outputs.portable_zip }}"
+
+          if (Test-Path $portableDir) {
+            Remove-Item -LiteralPath $portableDir -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
+          Copy-Item -Path "$publishDir/*" -Destination $portableDir -Recurse -Force
+          Copy-Item -Path ".\README.md" -Destination (Join-Path $portableDir "README.md") -Force
+
+          # Portable mode marker: forces workspace to stay inside the portable folder.
+          Set-Content -Path (Join-Path $portableDir "portable.mode") -Encoding UTF8 -Value "portable-mode-enabled"
+
+          if (Test-Path $portableZip) {
+            Remove-Item -LiteralPath $portableZip -Force
+          }
+          Compress-Archive -Path "$portableDir/*" -DestinationPath $portableZip -Force
+
+      - name: Build installer source
+        shell: pwsh
+        run: |
+          $runtime = "${{ steps.vars.outputs.runtime }}"
+          $publishDir = "artifacts/publish/VSL.UI/$runtime"
+          $installerSource = "${{ steps.vars.outputs.installer_source }}"
+
+          if (Test-Path $installerSource) {
+            Remove-Item -LiteralPath $installerSource -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $installerSource -Force | Out-Null
+          Copy-Item -Path "$publishDir/*" -Destination $installerSource -Recurse -Force
+          Copy-Item -Path ".\README.md" -Destination (Join-Path $installerSource "README.md") -Force
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build setup.exe
+        shell: pwsh
+        run: |
+          $version = "${{ steps.vars.outputs.version }}"
+          $runtime = "${{ steps.vars.outputs.runtime }}"
+          $installerSource = (Resolve-Path "${{ steps.vars.outputs.installer_source }}").Path
+          $distDir = (Resolve-Path ".\dist").Path
+          $iconFile = (Resolve-Path ".\VSL.UI\Assets\VSL.ico").Path
+          $issFile = (Resolve-Path ".\packaging\installer.iss").Path
+
+          $isccCandidates = @(
+            "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path -LiteralPath $_) }
+
+          if (-not $isccCandidates -or $isccCandidates.Count -eq 0) {
+            throw "ISCC.exe not found after installing Inno Setup."
+          }
+
+          $iscc = $isccCandidates[0]
+          & $iscc `
+            "/DMyAppVersion=$version" `
+            "/DSourceDir=$installerSource" `
+            "/DOutputBaseFilename=VSL-Setup-$version-$runtime" `
+            "/DMyAppExeName=VSL.UI.exe" `
+            "/DSetupIconFile=$iconFile" `
+            "/O$distDir" `
+            "$issFile"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "ISCC failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Generate SHA256
+        shell: pwsh
+        run: |
+          $portableZip = "${{ steps.vars.outputs.portable_zip }}"
+          $installerExe = "${{ steps.vars.outputs.installer_exe }}"
+          $hashFile = "dist/SHA256SUMS.txt"
+
+          $zipHash = (Get-FileHash -Algorithm SHA256 $portableZip).Hash
+          $exeHash = (Get-FileHash -Algorithm SHA256 $installerExe).Hash
+
+          @(
+            "$zipHash *$(Split-Path -Leaf $portableZip)"
+            "$exeHash *$(Split-Path -Leaf $installerExe)"
+          ) | Set-Content -Path $hashFile -Encoding UTF8
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: VSL-${{ steps.vars.outputs.version }}-${{ steps.vars.outputs.runtime }}
+          path: |
+            ${{ steps.vars.outputs.portable_zip }}
+            ${{ steps.vars.outputs.installer_exe }}
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.vars.outputs.portable_zip }}
+            ${{ steps.vars.outputs.installer_exe }}
+            dist/SHA256SUMS.txt
