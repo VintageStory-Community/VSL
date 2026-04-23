@@ -34,6 +34,12 @@ public sealed class ServerProcessService(IPackageService packageService) : IServ
             }
 
             Directory.CreateDirectory(profile.DataPath);
+            var writableCheck = EnsureProfileWritable(profile);
+            if (!writableCheck.IsSuccess)
+            {
+                return writableCheck;
+            }
+
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -189,6 +195,61 @@ public sealed class ServerProcessService(IPackageService packageService) : IServ
             _process.Exited -= OnProcessExited;
             _process.Dispose();
             _process = null;
+        }
+    }
+
+    private static OperationResult EnsureProfileWritable(ServerProfile profile)
+    {
+        var logsPath = WorkspaceLayout.GetLogsPath(profile.DataPath);
+        Directory.CreateDirectory(logsPath);
+
+        var filesToProbe = new[]
+        {
+            profile.ActiveSaveFile,
+            Path.Combine(logsPath, "server-main.log"),
+            Path.Combine(logsPath, "server-chat.log"),
+            Path.Combine(logsPath, "server-debug.log"),
+            Path.Combine(logsPath, "server-audit.log")
+        };
+
+        foreach (var filePath in filesToProbe)
+        {
+            var probeResult = ProbeReadWrite(filePath);
+            if (!probeResult.IsSuccess)
+            {
+                return probeResult;
+            }
+        }
+
+        return OperationResult.Success();
+    }
+
+    private static OperationResult ProbeReadWrite(string filePath)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            using var stream = new FileStream(
+                filePath,
+                FileMode.OpenOrCreate,
+                FileAccess.ReadWrite,
+                FileShare.None);
+            return OperationResult.Success();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult.Failed($"服务器文件无写入权限：{filePath}", ex);
+        }
+        catch (IOException ex)
+        {
+            return OperationResult.Failed(
+                $"服务器文件被占用：{filePath}。可能已有服务器实例正在运行，请先停止后再启动。",
+                ex);
         }
     }
 }

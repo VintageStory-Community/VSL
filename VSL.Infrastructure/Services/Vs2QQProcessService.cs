@@ -265,6 +265,7 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             ? $"{talk.Sender}(QQ:{boundQq.Value}): {talk.Content}"
             : $"{talk.Sender}: {talk.Content}";
         var payload = $"[VS:{talk.ServerId}] {talk.Timestamp}\n{senderLine}";
+        EmitOutput($"[vs2qq] 日志转发 server={talk.ServerId} groups={groups.Count} sender={talk.Sender}");
 
         foreach (var groupId in groups)
         {
@@ -981,14 +982,21 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
 
                 if (payload["post_type"] is not null)
                 {
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        await _eventHandler(payload, cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _log($"[warn] OneBot 事件处理异常: {ex.Message}");
-                    }
+                        try
+                        {
+                            await _eventHandler(payload, cancellationToken);
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            // Normal shutdown.
+                        }
+                        catch (Exception ex)
+                        {
+                            _log($"[warn] OneBot 事件处理异常: {ex.Message}");
+                        }
+                    }, cancellationToken);
                 }
             }
         }
@@ -1411,6 +1419,8 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
         private readonly Action<string> _log;
         private readonly Dictionary<string, (string Signature, long Offset)> _offsetCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _lineRemainder = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, (string Signature, long Offset)> _companionOffsetCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _companionLineRemainder = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _missingWarned = new(StringComparer.OrdinalIgnoreCase);
 
         public Vs2QQLogTailer(
@@ -1439,6 +1449,19 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             var offset = path.Length;
             SetOffset(serverId, signature, offset);
             _lineRemainder.Remove(serverId);
+
+            foreach (var companionPath in GetCompanionLogPaths(path.FullName))
+            {
+                var companion = new FileInfo(companionPath);
+                if (!companion.Exists)
+                {
+                    continue;
+                }
+
+                var companionKey = BuildCompanionKey(serverId, companion.FullName);
+                _companionOffsetCache[companionKey] = (BuildFileSignature(companion), companion.Length);
+                _companionLineRemainder.Remove(companionKey);
+            }
         }
 
         public IReadOnlyList<Vs2QQTalkMessage> PollServer(Vs2QQServerRecord server)
@@ -1447,7 +1470,8 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             var path = new FileInfo(server.LogPath);
             if (!path.Exists)
             {
-                if (_missingWarned.Add(serverId))
+                var missingKey = BuildMissingKey(serverId, path.FullName);
+                if (_missingWarned.Add(missingKey))
                 {
                     _log($"[warn] VS2QQ 日志文件不存在 server={serverId}: {path.FullName}");
                 }
@@ -1455,7 +1479,7 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
                 return [];
             }
 
-            _missingWarned.Remove(serverId);
+            _missingWarned.Remove(BuildMissingKey(serverId, path.FullName));
 
             var signature = BuildFileSignature(path);
             var fileSize = path.Length;
@@ -1510,6 +1534,123 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
 
             var newOffset = offset + chunk.Length;
             SetOffset(serverId, signature, newOffset);
+            var result = new List<Vs2QQTalkMessage>();
+            if (chunk.Length > 0)
+            {
+                var text = DecodeChunk(chunk);
+                if (!string.IsNullOrEmpty(text))
+                {
+                    if (_lineRemainder.TryGetValue(serverId, out var remainder) && !string.IsNullOrEmpty(remainder))
+                    {
+                        text = remainder + text;
+                    }
+
+                    string[] lines;
+                    if (text.EndsWith('\n') || text.EndsWith('\r'))
+                    {
+                        lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+                        _lineRemainder[serverId] = string.Empty;
+                    }
+                    else
+                    {
+                        lines = text.Split(['\r', '\n'], StringSplitOptions.None);
+                        if (lines.Length == 0)
+                        {
+                            _lineRemainder[serverId] = text;
+                            lines = [];
+                        }
+                        else
+                        {
+                            _lineRemainder[serverId] = lines[^1];
+                            lines = lines[..^1];
+                        }
+                    }
+
+                    foreach (var line in lines)
+                    {
+                        var parsed = _parser.Parse(line, server.ChatRegex);
+                        if (parsed is null)
+                        {
+                            continue;
+                        }
+
+                        result.Add(new Vs2QQTalkMessage(
+                            serverId,
+                            parsed.Value.Timestamp,
+                            parsed.Value.Sender,
+                            parsed.Value.Content));
+                    }
+                }
+            }
+
+            foreach (var companionPath in GetCompanionLogPaths(path.FullName))
+            {
+                var companionMessages = PollCompanionLog(serverId, companionPath, server.ChatRegex);
+                if (companionMessages.Count > 0)
+                {
+                    result.AddRange(companionMessages);
+                }
+            }
+
+            return result;
+        }
+
+        private IReadOnlyList<Vs2QQTalkMessage> PollCompanionLog(string serverId, string logPath, string? chatRegex)
+        {
+            var path = new FileInfo(logPath);
+            var companionKey = BuildCompanionKey(serverId, path.FullName);
+            if (!path.Exists)
+            {
+                var missingKey = BuildMissingKey(serverId, path.FullName);
+                _missingWarned.Add(missingKey);
+                return [];
+            }
+
+            _missingWarned.Remove(BuildMissingKey(serverId, path.FullName));
+
+            var signature = BuildFileSignature(path);
+            var fileSize = path.Length;
+            _companionOffsetCache.TryGetValue(companionKey, out var state);
+            if (state == default || string.IsNullOrWhiteSpace(state.Signature))
+            {
+                _companionOffsetCache[companionKey] = (signature, fileSize);
+                return [];
+            }
+
+            long offset = state.Offset;
+            if (!string.Equals(state.Signature, signature, StringComparison.Ordinal))
+            {
+                offset = 0;
+                _companionLineRemainder.Remove(companionKey);
+            }
+
+            if (offset > fileSize)
+            {
+                offset = 0;
+                _companionLineRemainder.Remove(companionKey);
+            }
+
+            byte[] chunk;
+            using (var stream = path.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                stream.Seek(offset, SeekOrigin.Begin);
+                var remaining = fileSize - offset;
+                if (remaining <= 0)
+                {
+                    chunk = [];
+                }
+                else
+                {
+                    chunk = new byte[remaining];
+                    var read = stream.Read(chunk, 0, chunk.Length);
+                    if (read < chunk.Length)
+                    {
+                        Array.Resize(ref chunk, read);
+                    }
+                }
+            }
+
+            _companionOffsetCache[companionKey] = (signature, offset + chunk.Length);
             if (chunk.Length == 0)
             {
                 return [];
@@ -1521,7 +1662,7 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
                 return [];
             }
 
-            if (_lineRemainder.TryGetValue(serverId, out var remainder) && !string.IsNullOrEmpty(remainder))
+            if (_companionLineRemainder.TryGetValue(companionKey, out var remainder) && !string.IsNullOrEmpty(remainder))
             {
                 text = remainder + text;
             }
@@ -1530,25 +1671,25 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             if (text.EndsWith('\n') || text.EndsWith('\r'))
             {
                 lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-                _lineRemainder[serverId] = string.Empty;
+                _companionLineRemainder[companionKey] = string.Empty;
             }
             else
             {
                 lines = text.Split(['\r', '\n'], StringSplitOptions.None);
                 if (lines.Length == 0)
                 {
-                    _lineRemainder[serverId] = text;
+                    _companionLineRemainder[companionKey] = text;
                     return [];
                 }
 
-                _lineRemainder[serverId] = lines[^1];
+                _companionLineRemainder[companionKey] = lines[^1];
                 lines = lines[..^1];
             }
 
             var result = new List<Vs2QQTalkMessage>();
             foreach (var line in lines)
             {
-                var parsed = _parser.Parse(line, server.ChatRegex);
+                var parsed = _parser.Parse(line, chatRegex);
                 if (parsed is null)
                 {
                     continue;
@@ -1608,7 +1749,57 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
 
         private static string BuildFileSignature(FileInfo file)
         {
-            return $"{file.FullName}:{file.Length}:{file.LastWriteTimeUtc.Ticks}";
+            // Keep signature stable while file is appended; only rotate when file identity changes.
+            return $"{file.FullName}:{file.CreationTimeUtc.Ticks}";
+        }
+
+        private static IReadOnlyList<string> GetCompanionLogPaths(string logPath)
+        {
+            var fileName = Path.GetFileName(logPath);
+            var directory = Path.GetDirectoryName(logPath);
+            if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(directory))
+            {
+                return [];
+            }
+
+            if (string.Equals(fileName, "server-main.log", StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                [
+                    Path.Combine(directory, "server-chat.log"),
+                    Path.Combine(directory, "server-audit.log")
+                ];
+            }
+
+            if (string.Equals(fileName, "server-chat.log", StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                [
+                    Path.Combine(directory, "server-main.log"),
+                    Path.Combine(directory, "server-audit.log")
+                ];
+            }
+
+            if (string.Equals(fileName, "server-audit.log", StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                [
+                    Path.Combine(directory, "server-main.log"),
+                    Path.Combine(directory, "server-chat.log")
+                ];
+            }
+
+            return [];
+        }
+
+        private static string BuildCompanionKey(string serverId, string path)
+        {
+            return $"{serverId}|{path}";
+        }
+
+        private static string BuildMissingKey(string serverId, string path)
+        {
+            return $"{serverId}@{path}";
         }
     }
 
@@ -1634,6 +1825,16 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             new(@"^(?<time>\d{4}[-/]\d{2}[-/]\d{2}[ T]\d{2}:\d{2}:\d{2}).*?<(?<sender>[^>]{1,64})>\s*(?<content>.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
             new(@"^\[(?<time>[^\]]+)\]\s*<(?<sender>[^>]{1,64})>\s*(?<content>.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
         ];
+
+        private static readonly Regex[] SystemEventPatterns =
+        [
+            new(@"^(?<time>\d{1,2}\.\d{1,2}\.\d{4}\s+\d{2}:\d{2}:\d{2})\s*\[Event\]\s*(?<player>[^\[\]:]{1,64})\s+\[[^\]]+\](?::\d+)?\s+joins\.$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+            new(@"^(?<time>\d{1,2}\.\d{1,2}\.\d{4}\s+\d{2}:\d{2}:\d{2})\s*\[Event\]\s*Player\s+(?<player>[^\.]{1,64})\s+left\.$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+        ];
+
+        private static readonly Regex DeathAuditPattern =
+            new(@"^(?<time>\d{1,2}\.\d{1,2}\.\d{4}\s+\d{2}:\d{2}:\d{2})\s*\[Audit\]\s*(?<player>[^\.]{1,64})\s+died(?:\.\s*Death message:\s*(?<reason>.+))?\s*$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private readonly Dictionary<string, Regex?> _customPatternCache = new(StringComparer.Ordinal);
 
@@ -1671,6 +1872,12 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
                 }
             }
 
+            var systemEvent = ParseSystemEvent(line);
+            if (systemEvent.HasValue)
+            {
+                return systemEvent;
+            }
+
             return null;
         }
 
@@ -1706,6 +1913,51 @@ public sealed class Vs2QQProcessService : IVs2QQProcessService
             var timeRaw = match.Groups["time"].Value.Trim();
             var timestamp = NormalizeTime(timeRaw);
             return (timestamp, sender, content);
+        }
+
+        private static (string Timestamp, string Sender, string Content)? ParseSystemEvent(string line)
+        {
+            var deathMatch = DeathAuditPattern.Match(line);
+            if (deathMatch.Success)
+            {
+                var player = deathMatch.Groups["player"].Value.Trim();
+                if (!string.IsNullOrWhiteSpace(player))
+                {
+                    var timeRaw = deathMatch.Groups["time"].Value.Trim();
+                    var timestamp = NormalizeTime(timeRaw);
+                    var reason = deathMatch.Groups["reason"].Value.Trim();
+                    var content = string.IsNullOrWhiteSpace(reason)
+                        ? $"玩家 {player} 死亡"
+                        : $"玩家 {player} 死亡：{reason}";
+
+                    return (timestamp, "系统", content);
+                }
+            }
+
+            foreach (var pattern in SystemEventPatterns)
+            {
+                var match = pattern.Match(line);
+                if (!match.Success)
+                {
+                    continue;
+                }
+
+                var player = match.Groups["player"].Value.Trim();
+                if (string.IsNullOrWhiteSpace(player))
+                {
+                    continue;
+                }
+
+                var timeRaw = match.Groups["time"].Value.Trim();
+                var timestamp = NormalizeTime(timeRaw);
+                var content = line.Contains("joins.", StringComparison.OrdinalIgnoreCase)
+                    ? $"玩家 {player} 加入了服务器"
+                    : $"玩家 {player} 离开了服务器";
+
+                return (timestamp, "系统", content);
+            }
+
+            return null;
         }
 
         private static string NormalizeTime(string value)
