@@ -14,20 +14,29 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="2,0,0,12">
-            <StackPanel DockPanel.Dock="Left">
+        <StackPanel Grid.Row="0" Margin="2,0,0,12">
+            <StackPanel>
                 <TextBlock Style="{DynamicResource VslPageTitleStyle}" Text="服务器配置" />
                 <TextBlock Style="{DynamicResource VslPageSubTitleStyle}" Text="可视化编辑 serverconfig.json 常用字段" />
             </StackPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="UI语言" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <ComboBox Width="120" SelectedValue="{Binding UiLanguage}" SelectedValuePath="Tag">
-                    <ComboBoxItem Content="中文" Tag="zh-CN" />
-                    <ComboBoxItem Content="English" Tag="en-US" />
-                </ComboBox>
-                <Button Content="保存可视化配置" Height="32" Width="140" Margin="10,0,0,0" Style="{StaticResource VslToolbarButtonStyle}" Command="{Binding SaveCommonConfigCommand}" />
-            </StackPanel>
-        </DockPanel>
+            <Border Margin="0,10,0,0" Style="{DynamicResource VslActionBarHostStyle}">
+                <WrapPanel>
+                    <TextBlock Text="UI语言" VerticalAlignment="Center" Margin="0,0,8,8" />
+                    <ComboBox Width="130"
+                              Margin="0,0,12,8"
+                              SelectedValue="{Binding UiLanguage}"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="中文" Tag="zh-CN" />
+                        <ComboBoxItem Content="English" Tag="en-US" />
+                    </ComboBox>
+                    <Button Content="保存可视化配置"
+                            Height="32"
+                            Width="140"
+                            Style="{StaticResource VslToolbarButtonStyle}"
+                            Command="{Binding SaveCommonConfigCommand}" />
+                </WrapPanel>
+            </Border>
+        </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
@@ -180,4 +189,3 @@
         </ScrollViewer>
     </Grid>
 </UserControl>
-

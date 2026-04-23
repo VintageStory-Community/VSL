@@ -11,7 +11,7 @@
                  Height="980"
                  MinWidth="1320"
                  MinHeight="820"
-                 Background="{DynamicResource VslAppBackgroundBrush}"
+                 Background="Transparent"
                  Icon="{DynamicResource VslAppLogoImage}"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
@@ -24,6 +24,7 @@
 
         <ui:TitleBar Grid.Row="0"
                      Margin="14,8,14,8"
+                     Background="{DynamicResource VslAppBackgroundBrush}"
                      ShowMinimize="False"
                      ShowMaximize="False"
                      ShowClose="False"
@@ -70,7 +71,7 @@
                                 Click="WindowMaximizeButton_OnClick">
                             <ui:SymbolIcon Style="{StaticResource VslWindowControlSymbolIconStyle}" Symbol="Square20" />
                         </Button>
-                        <Button Style="{StaticResource VslWindowControlButtonStyle}"
+                        <Button Style="{StaticResource VslWindowCloseButtonStyle}"
                                 ToolTip="关闭"
                                 Click="WindowCloseButton_OnClick">
                             <ui:SymbolIcon Style="{StaticResource VslWindowControlSymbolIconStyle}" Symbol="Dismiss20" />

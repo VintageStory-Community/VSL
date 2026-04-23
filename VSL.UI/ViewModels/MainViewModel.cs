@@ -1020,7 +1020,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
             await RefreshSavesAsync();
             await RefreshModsAsync();
-            SetMessage($"档案已加载：{SelectedProfile.Name}");
+            SetMessage($"档案已加载：{SelectedProfile.Name}", showToast: false);
         }
         catch (Exception ex)
         {
@@ -1650,10 +1650,13 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         return $"{details}\n{ex.GetType().Name}: {ex.Message}";
     }
 
-    private void SetMessage(string message)
+    private void SetMessage(string message, bool showToast = true)
     {
         LastMessage = $"[{DateTime.Now:HH:mm:ss}] {message}";
-        ShowToast(message);
+        if (showToast)
+        {
+            ShowToast(message);
+        }
     }
 
     private void ShowToast(string message)

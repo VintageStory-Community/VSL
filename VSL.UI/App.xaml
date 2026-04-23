@@ -13,14 +13,14 @@
             <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
             <converters:NavKeyToVisibilityConverter x:Key="NavKeyToVisibilityConverter" />
 
-            <SolidColorBrush x:Key="VslAppBackgroundBrush" Color="#F3F3F3" />
+            <SolidColorBrush x:Key="VslAppBackgroundBrush" Color="#14FFFFFF" />
             <SolidColorBrush x:Key="VslMutedTextBrush" Color="#707070" />
             <SolidColorBrush x:Key="VslPanelBorderBrush" Color="#E0E0E0" />
-            <SolidColorBrush x:Key="VslPanelBackgroundBrush" Color="#F2FFFFFF" />
-            <SolidColorBrush x:Key="VslTableHeaderBrush" Color="#F5F5F5" />
-            <SolidColorBrush x:Key="VslTableRowHoverBrush" Color="#F5F5F5" />
-            <SolidColorBrush x:Key="VslTableRowSelectedBrush" Color="#E5E5E5" />
-            <SolidColorBrush x:Key="VslActionBarBrush" Color="#FAFAFA" />
+            <SolidColorBrush x:Key="VslPanelBackgroundBrush" Color="#78FFFFFF" />
+            <SolidColorBrush x:Key="VslTableHeaderBrush" Color="#88FFFFFF" />
+            <SolidColorBrush x:Key="VslTableRowHoverBrush" Color="#84FFFFFF" />
+            <SolidColorBrush x:Key="VslTableRowSelectedBrush" Color="#99DCEBFF" />
+            <SolidColorBrush x:Key="VslActionBarBrush" Color="#62FFFFFF" />
             <SolidColorBrush x:Key="VslCodePaneBrush" Color="#1A1A1A" />
             <SolidColorBrush x:Key="VslHeaderBrush" Color="#FAFAFA" />
             <SolidColorBrush x:Key="LeftNavigationViewSeparatorBrush" Color="#00FFFFFF" />
@@ -55,6 +55,7 @@
                 <Setter Property="FontSize" Value="15" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
             </Style>
 
             <Style x:Key="VslGlassPanelStyle" TargetType="Border">
@@ -213,6 +214,56 @@
                 </Setter>
             </Style>
 
+            <DropShadowEffect x:Key="VslCloseHoverShadowEffect"
+                              Color="#66D13438"
+                              BlurRadius="12"
+                              ShadowDepth="0"
+                              Opacity="0.85" />
+
+            <Style x:Key="VslWindowCloseButtonStyle" TargetType="Button">
+                <Setter Property="Width" Value="34" />
+                <Setter Property="Height" Value="30" />
+                <Setter Property="Margin" Value="4,0,0,0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="#00FFFFFF" />
+                <Setter Property="Foreground" Value="#C0222A" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CloseControlBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseControlBorder" Property="Background" Value="#26D13438" />
+                                    <Setter TargetName="CloseControlBorder" Property="Effect" Value="{StaticResource VslCloseHoverShadowEffect}" />
+                                    <Setter Property="Foreground" Value="#E81123" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="CloseControlBorder" Property="Background" Value="#3AD13438" />
+                                    <Setter Property="Foreground" Value="#C50F1F" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="CloseControlBorder" Property="Opacity" Value="0.45" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource DefaultUiButtonStyle}">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="MouseOverBackground" Value="#22000000" />
@@ -285,7 +336,7 @@
             </Style>
 
             <Style x:Key="VslListViewStyle" TargetType="ListView">
-                <Setter Property="Background" Value="#FFFFFFFF" />
+                <Setter Property="Background" Value="#66FFFFFF" />
                 <Setter Property="BorderBrush" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="0" />
@@ -345,7 +396,7 @@
                 <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="BorderBrush" Value="#EBEBEB" />
                 <Setter Property="BorderThickness" Value="0,0,0,1" />
-                <Setter Property="Background" Value="#FFFFFFFF" />
+                <Setter Property="Background" Value="#66FFFFFF" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ListViewItem">
@@ -363,7 +414,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="#FAFAFA" />
+                                    <Setter TargetName="RowBorder" Property="Background" Value="#54FFFFFF" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource VslTableRowHoverBrush}" />
@@ -450,9 +501,38 @@
                 <Setter Property="Padding" Value="10,0" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{DynamicResource VslPanelBorderBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="#7A9FD0" />
+                    </Trigger>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Setter Property="BorderBrush" Value="#2F6FEB" />
+                    </Trigger>
+                    <Trigger Property="IsDropDownOpen" Value="True">
+                        <Setter Property="BorderBrush" Value="#2F6FEB" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <Style TargetType="ComboBox" BasedOn="{StaticResource VslComboBoxStyle}" />
+
+            <Style x:Key="VslComboBoxItemStyle" TargetType="ComboBoxItem">
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="Background" Value="Transparent" />
+                <Style.Triggers>
+                    <Trigger Property="IsHighlighted" Value="True">
+                        <Setter Property="Background" Value="#EAF2FF" />
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#DCEBFF" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource VslComboBoxItemStyle}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

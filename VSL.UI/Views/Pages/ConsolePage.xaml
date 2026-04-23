@@ -61,7 +61,7 @@
                         CornerRadius="4"
                         BorderThickness="1"
                         BorderBrush="{DynamicResource VslPanelBorderBrush}"
-                        Background="#FFFFFFFF"
+                        Background="{DynamicResource VslPanelBackgroundBrush}"
                         Visibility="{Binding IsServerStartupProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel>
                         <TextBlock Text="{Binding ServerStartupProgressText}" />

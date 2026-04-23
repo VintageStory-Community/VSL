@@ -72,12 +72,15 @@ public sealed class ServerConfigService : IServerConfigService
 
         var worldConfig = GetOrCreateObject(loadResult.Value, "WorldConfig");
         var worldRules = GetOrCreateObject(worldConfig, "WorldConfiguration");
+        var root = loadResult.Value;
 
         var values = WorldRuleCatalog.DefaultRules
             .Select(def => new WorldRuleValue
             {
                 Definition = def,
                 Value = ReadFlexibleString(worldRules[def.Key])
+                    ?? ReadRuleFallbackValue(def.Key, root, worldConfig)
+                    ?? def.DefaultValue
             })
             .ToList();
 
@@ -127,18 +130,39 @@ public sealed class ServerConfigService : IServerConfigService
 
             foreach (var rule in rules)
             {
-                if (string.IsNullOrWhiteSpace(rule.Value))
+                var normalizedValue = rule.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(normalizedValue))
                 {
                     continue;
                 }
 
-                if (rule.Definition.Type == WorldRuleType.Boolean && bool.TryParse(rule.Value, out var boolValue))
+                if (string.Equals(rule.Definition.Key, "worldWidth", StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(normalizedValue, out var worldWidth))
+                {
+                    root["MapSizeX"] = worldWidth;
+                    worldRules[rule.Definition.Key] = worldWidth;
+                    continue;
+                }
+
+                if (string.Equals(rule.Definition.Key, "worldLength", StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(normalizedValue, out var worldLength))
+                {
+                    root["MapSizeZ"] = worldLength;
+                    worldRules[rule.Definition.Key] = worldLength;
+                    continue;
+                }
+
+                if (rule.Definition.Type == WorldRuleType.Boolean && bool.TryParse(normalizedValue, out var boolValue))
                 {
                     worldRules[rule.Definition.Key] = boolValue;
                 }
+                else if (rule.Definition.Type == WorldRuleType.Number && int.TryParse(normalizedValue, out var intValue))
+                {
+                    worldRules[rule.Definition.Key] = intValue;
+                }
                 else
                 {
-                    worldRules[rule.Definition.Key] = rule.Value;
+                    worldRules[rule.Definition.Key] = normalizedValue;
                 }
             }
 
@@ -336,6 +360,16 @@ public sealed class ServerConfigService : IServerConfigService
             JsonValueKind.False => bool.FalseString.ToLowerInvariant(),
             JsonValueKind.Number => node.ToString(),
             _ => node.ToJsonString()
+        };
+    }
+
+    private static string? ReadRuleFallbackValue(string key, JsonObject root, JsonObject worldConfig)
+    {
+        return key switch
+        {
+            "worldWidth" => ReadFlexibleString(root["MapSizeX"]) ?? ReadFlexibleString(worldConfig["MapSizeX"]),
+            "worldLength" => ReadFlexibleString(root["MapSizeZ"]) ?? ReadFlexibleString(worldConfig["MapSizeZ"]),
+            _ => null
         };
     }
 }
