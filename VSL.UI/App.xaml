@@ -336,30 +336,30 @@
             </Style>
 
             <Style x:Key="VslListViewStyle" TargetType="ListView">
-                <Setter Property="Background" Value="#66FFFFFF" />
+                <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderBrush" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Foreground" Value="#1A1A1A" />
-                <Setter Property="AlternationCount" Value="2" />
+                <Setter Property="AlternationCount" Value="1" />
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
                 <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
-                <Setter Property="ClipToBounds" Value="True" />
+                <Setter Property="ClipToBounds" Value="False" />
                 <Setter Property="SnapsToDevicePixels" Value="True" />
                 <Setter Property="UseLayoutRounding" Value="True" />
-                <Setter Property="Margin" Value="0,2,0,0" />
+                <Setter Property="Margin" Value="0,4,0,0" />
             </Style>
 
             <Style x:Key="VslGridViewHeaderStyle" TargetType="GridViewColumnHeader">
-                <Setter Property="Height" Value="36" />
+                <Setter Property="Height" Value="34" />
                 <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Padding" Value="8,0" />
-                <Setter Property="Background" Value="#F5F5F5" />
-                <Setter Property="Foreground" Value="#1A1A1A" />
-                <Setter Property="BorderBrush" Value="#E3E3E3" />
-                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Background" Value="#70FFFFFF" />
+                <Setter Property="Foreground" Value="#5A5A5A" />
+                <Setter Property="BorderBrush" Value="#AADFE3E8" />
+                <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="Template">
@@ -369,6 +369,8 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
+                                    Margin="0,0,8,10"
+                                    CornerRadius="8"
                                     Padding="{TemplateBinding Padding}"
                                     SnapsToDevicePixels="True">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -378,9 +380,11 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Role" Value="Padding">
                                     <Setter TargetName="HeaderBorder" Property="BorderThickness" Value="0" />
+                                    <Setter TargetName="HeaderBorder" Property="Margin" Value="0" />
+                                    <Setter TargetName="HeaderBorder" Property="Background" Value="Transparent" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="HeaderBorder" Property="Background" Value="#EEEEEE" />
+                                    <Setter TargetName="HeaderBorder" Property="Background" Value="#A8FFFFFF" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -389,14 +393,14 @@
             </Style>
 
             <Style x:Key="VslListViewItemStyle" TargetType="ListViewItem">
-                <Setter Property="MinHeight" Value="36" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="Margin" Value="0" />
+                <Setter Property="MinHeight" Value="46" />
+                <Setter Property="Padding" Value="8,8" />
+                <Setter Property="Margin" Value="0,0,0,8" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
-                <Setter Property="BorderBrush" Value="#EBEBEB" />
-                <Setter Property="BorderThickness" Value="0,0,0,1" />
-                <Setter Property="Background" Value="#66FFFFFF" />
+                <Setter Property="BorderBrush" Value="#CFE1E8" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Background" Value="#CCFFFFFF" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ListViewItem">
@@ -404,8 +408,8 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
                                     Padding="{TemplateBinding Padding}"
-                                    ClipToBounds="True"
                                     SnapsToDevicePixels="True">
                                 <GridViewRowPresenter Columns="{Binding Path=View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}"
                                                       HorizontalAlignment="Stretch"
@@ -413,15 +417,16 @@
                                                       Content="{TemplateBinding Content}" />
                             </Border>
                             <ControlTemplate.Triggers>
-                                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="#54FFFFFF" />
-                                </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource VslTableRowHoverBrush}" />
+                                    <Setter TargetName="RowBorder" Property="Background" Value="#F2F8FF" />
+                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="#AFCBEB" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource VslTableRowSelectedBrush}" />
-                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="#EBEBEB" />
+                                    <Setter TargetName="RowBorder" Property="Background" Value="#E6F0FF" />
+                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="#87ACDE" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="RowBorder" Property="Opacity" Value="0.6" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -436,7 +441,7 @@
 
             <Style x:Key="VslTableCellTextStyle" TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="Margin" Value="8,0" />
+                <Setter Property="Margin" Value="12,2" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 

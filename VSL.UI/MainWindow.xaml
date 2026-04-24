@@ -7,10 +7,10 @@
                  xmlns:pages="clr-namespace:VSL.UI.Views.Pages"
                  mc:Ignorable="d"
                  Title="VintageStoryServerLauncher (VSL)"
-                 Width="1600"
-                 Height="980"
-                 MinWidth="1320"
-                 MinHeight="820"
+                 Width="1360"
+                 Height="860"
+                 MinWidth="1120"
+                 MinHeight="700"
                  Background="Transparent"
                  Icon="{DynamicResource VslAppLogoImage}"
                  ExtendsContentIntoTitleBar="True"
@@ -23,11 +23,11 @@
         </Grid.RowDefinitions>
 
         <ui:TitleBar Grid.Row="0"
-                     Margin="14,8,14,8"
+                     Margin="14,0,0,8"
                      Background="{DynamicResource VslAppBackgroundBrush}"
-                     ShowMinimize="False"
-                     ShowMaximize="False"
-                     ShowClose="False"
+                     ShowMinimize="True"
+                     ShowMaximize="True"
+                     ShowClose="True"
                      Title="Vintage Story Server Launcher">
             <ui:TitleBar.Icon>
                 <ui:ImageIcon Source="{DynamicResource VslAppLogoImage}" />
@@ -37,105 +37,67 @@
                     <TextBlock Text="VSL 1.0" Opacity="0.7" VerticalAlignment="Center" />
                 </Border>
             </ui:TitleBar.Header>
-            <ui:TitleBar.TrailingContent>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Style="{StaticResource VslTitleBarActionButtonStyle}" Command="{Binding StartServerCommand}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <ui:SymbolIcon Style="{StaticResource VslTitleBarSymbolIconStyle}" Symbol="Play20" />
-                                <TextBlock VerticalAlignment="Center" Text="启动服务器" />
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource VslTitleBarActionButtonStyle}" Margin="0" Command="{Binding StopServerCommand}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <ui:SymbolIcon Style="{StaticResource VslTitleBarSymbolIconStyle}" Symbol="Stop20" />
-                                <TextBlock VerticalAlignment="Center" Text="停止服务器" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Style="{StaticResource VslWindowControlButtonStyle}"
-                                ToolTip="最小化"
-                                Click="WindowMinimizeButton_OnClick">
-                            <ui:SymbolIcon Style="{StaticResource VslWindowControlSymbolIconStyle}" Symbol="Subtract20" />
-                        </Button>
-                        <Button Style="{StaticResource VslWindowControlButtonStyle}"
-                                ToolTip="最大化/还原"
-                                Click="WindowMaximizeButton_OnClick">
-                            <ui:SymbolIcon Style="{StaticResource VslWindowControlSymbolIconStyle}" Symbol="Square20" />
-                        </Button>
-                        <Button Style="{StaticResource VslWindowCloseButtonStyle}"
-                                ToolTip="关闭"
-                                Click="WindowCloseButton_OnClick">
-                            <ui:SymbolIcon Style="{StaticResource VslWindowControlSymbolIconStyle}" Symbol="Dismiss20" />
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </ui:TitleBar.TrailingContent>
         </ui:TitleBar>
 
-        <Grid Grid.Row="1" Margin="14,0,14,12">
+        <Grid Grid.Row="1" Margin="0,0,14,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="236" />
-                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="156" />
+                <ColumnDefinition Width="8" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Style="{DynamicResource VslGlassPanelStyle}"
-                    Padding="8"
-                    BorderThickness="1,1,0,1">
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    CornerRadius="0">
                 <ui:NavigationView x:Name="RootNavigationView"
                                    Background="Transparent"
                                    PaneDisplayMode="Left"
-                                   OpenPaneLength="216"
-                                   CompactPaneLength="54"
+                                   OpenPaneLength="156"
+                                   CompactPaneLength="56"
                                    IsPaneVisible="True"
                                    IsPaneOpen="True"
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed"
                                    IsFooterSeparatorVisible="True"
-                                   Padding="2"
+                                   Padding="8,8"
                                    SelectionChanged="RootNavigationView_OnSelectionChanged">
+                    <ui:NavigationView.Resources>
+                        <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+                    </ui:NavigationView.Resources>
                     <ui:NavigationView.MenuItems>
-                        <ui:NavigationViewItem x:Name="NavVersionProfiles" Content="版本与档案" Tag="versionprofile" IsActive="True" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavVersionProfiles" Content="版本与档案" Tag="versionprofile" IsActive="True" ToolTipService.ToolTip="版本与档案" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="BoxMultiple20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavSettings" Content="服务器配置" Tag="settings" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavSettings" Content="服务器配置" Tag="settings" ToolTipService.ToolTip="服务器配置" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Server20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavAdvancedJson" Content="高级 JSON" Tag="advancedjson" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavAdvancedJson" Content="高级 JSON" Tag="advancedjson" ToolTipService.ToolTip="高级 JSON" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="CodeBlock20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavSaves" Content="存档管理" Tag="saves" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavSaves" Content="存档管理" Tag="saves" ToolTipService.ToolTip="存档管理" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Save20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavMapPreview" Content="地图预览" Tag="mappreview" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavMapPreview" Content="地图预览" Tag="mappreview" ToolTipService.ToolTip="地图预览" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Map20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavMods" Content="Mod 管理" Tag="mods" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavMods" Content="Mod 管理" Tag="mods" ToolTipService.ToolTip="Mod 管理" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="PuzzleCube20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavVs2QQConfig" Content="机器人配置" Tag="vs2qqconfig" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavVs2QQConfig" Content="机器人配置" Tag="vs2qqconfig" ToolTipService.ToolTip="机器人配置" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Bot20" />
                             </ui:NavigationViewItem.Icon>
@@ -143,22 +105,22 @@
                     </ui:NavigationView.MenuItems>
 
                     <ui:NavigationView.FooterMenuItems>
-                        <ui:NavigationViewItem x:Name="NavConsole" Content="控制台" Tag="console" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavConsole" Content="控制台" Tag="console" ToolTipService.ToolTip="控制台" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="WindowConsole20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavVs2QQRunner" Content="机器人运行" Tag="vs2qqrunner" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavVs2QQRunner" Content="机器人" Tag="vs2qqrunner" ToolTipService.ToolTip="机器人" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="PlayCircle20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavAppSettings" Content="设置" Tag="appsettings" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavAppSettings" Content="设置" Tag="appsettings" ToolTipService.ToolTip="设置" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Settings20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem x:Name="NavAbout" Content="关于" Tag="about" Click="NavigationItem_OnClick">
+                        <ui:NavigationViewItem x:Name="NavAbout" Content="关于" Tag="about" ToolTipService.ToolTip="关于" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Info20" />
                             </ui:NavigationViewItem.Icon>
@@ -169,6 +131,8 @@
 
             <Border Grid.Column="2"
                     Style="{DynamicResource VslGlassPanelStyle}"
+                    CornerRadius="8"
+                    Margin="0,0,0,12"
                     Padding="12">
                 <Grid>
                     <pages:VersionProfilesPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=versionprofile}" />

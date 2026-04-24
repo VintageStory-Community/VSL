@@ -102,14 +102,9 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Row="4"
-                            Margin="0,10,0,0"
-                            Padding="10"
-                            CornerRadius="4"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource VslPanelBorderBrush}"
-                            Background="{DynamicResource VslPanelBackgroundBrush}">
-                        <Grid>
+                    <Grid Grid.Row="4"
+                          Margin="0,10,0,0">
+                        <Grid Margin="10">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
@@ -183,7 +178,7 @@
                                 </TextBlock>
                             </Grid>
                         </Grid>
-                    </Border>
+                    </Grid>
                 </Grid>
             </ui:Card>
 
