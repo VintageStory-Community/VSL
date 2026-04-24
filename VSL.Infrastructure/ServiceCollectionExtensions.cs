@@ -15,6 +15,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IProfileService, ProfileService>();
         services.AddSingleton<IServerConfigService, ServerConfigService>();
         services.AddSingleton<ISaveService, SaveService>();
+        services.AddSingleton<IMapPreviewService, MapPreviewService>();
         services.AddSingleton<IModService, ModService>();
         services.AddSingleton<IServerProcessService, ServerProcessService>();
         services.AddSingleton<IVs2QQProcessService, Vs2QQProcessService>();

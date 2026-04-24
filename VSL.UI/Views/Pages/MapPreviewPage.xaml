@@ -1,0 +1,134 @@
+<UserControl x:Class="VSL.UI.Views.Pages.MapPreviewPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d"
+             d:DesignHeight="860"
+             d:DesignWidth="1180">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="2,0,0,12">
+            <TextBlock Style="{DynamicResource VslPageTitleStyle}" Text="地图预览" />
+            <TextBlock Style="{DynamicResource VslPageSubTitleStyle}"
+                       Text="从存档读取 mapchunk 数据，生成彩色与灰度地图预览（只读，不写入存档）。" />
+        </StackPanel>
+
+        <ui:Card Grid.Row="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Style="{DynamicResource VslActionBarHostStyle}">
+                    <WrapPanel>
+                        <Button Content="加载地图预览"
+                                Style="{StaticResource VslToolbarButtonStyle}"
+                                Command="{Binding LoadMapPreviewCommand}" />
+                        <Button Content="刷新存档列表"
+                                Style="{StaticResource VslToolbarButtonStyle}"
+                                Command="{Binding RefreshSavesCommand}" />
+                        <TextBlock Margin="8,4,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource VslMutedTextBrush}"
+                                   Text="优先读取“存档管理”里当前选中的存档；未选中时读取当前活动存档。" />
+                    </WrapPanel>
+                </Border>
+
+                <StackPanel Grid.Row="1" Margin="4,10,4,10">
+                    <TextBlock Text="{Binding MapPreviewSummary}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding MapPreviewSourcePath}"
+                               Margin="0,4,0,0"
+                               Foreground="{DynamicResource VslMutedTextBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding MapPreviewSourcePath}" />
+                </StackPanel>
+
+                <Grid Grid.Row="2">
+                    <TabControl x:Name="MapPreviewTabs" SelectionChanged="MapPreviewTabs_OnSelectionChanged">
+                        <TabItem Header="带颜色地图">
+                            <Border Background="#111316" BorderBrush="{DynamicResource VslPanelBorderBrush}" BorderThickness="1" Padding="8">
+                                <ScrollViewer x:Name="ColorScrollViewer"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto"
+                                              CanContentScroll="False"
+                                              PreviewMouseWheel="ColorScrollViewer_OnPreviewMouseWheel"
+                                              PreviewMouseLeftButtonDown="ColorScrollViewer_OnPreviewMouseLeftButtonDown"
+                                              PreviewMouseLeftButtonUp="ColorScrollViewer_OnPreviewMouseLeftButtonUp"
+                                              PreviewMouseMove="ColorScrollViewer_OnPreviewMouseMove"
+                                              MouseLeave="ColorScrollViewer_OnMouseLeave">
+                                    <Image x:Name="ColorImage"
+                                           Source="{Binding MapPreviewColorImage}"
+                                           Stretch="None"
+                                           SnapsToDevicePixels="True"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                        <Image.LayoutTransform>
+                                            <ScaleTransform x:Name="ColorScaleTransform" ScaleX="1" ScaleY="1" />
+                                        </Image.LayoutTransform>
+                                    </Image>
+                                </ScrollViewer>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="无颜色地图">
+                            <Border Background="#111316" BorderBrush="{DynamicResource VslPanelBorderBrush}" BorderThickness="1" Padding="8">
+                                <ScrollViewer x:Name="GrayscaleScrollViewer"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto"
+                                              CanContentScroll="False"
+                                              PreviewMouseWheel="GrayscaleScrollViewer_OnPreviewMouseWheel"
+                                              PreviewMouseLeftButtonDown="GrayscaleScrollViewer_OnPreviewMouseLeftButtonDown"
+                                              PreviewMouseLeftButtonUp="GrayscaleScrollViewer_OnPreviewMouseLeftButtonUp"
+                                              PreviewMouseMove="GrayscaleScrollViewer_OnPreviewMouseMove"
+                                              MouseLeave="GrayscaleScrollViewer_OnMouseLeave">
+                                    <Image x:Name="GrayscaleImage"
+                                           Source="{Binding MapPreviewGrayscaleImage}"
+                                           Stretch="None"
+                                           SnapsToDevicePixels="True"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                        <Image.LayoutTransform>
+                                            <ScaleTransform x:Name="GrayscaleScaleTransform" ScaleX="1" ScaleY="1" />
+                                        </Image.LayoutTransform>
+                                    </Image>
+                                </ScrollViewer>
+                            </Border>
+                        </TabItem>
+                    </TabControl>
+
+                    <Border HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,8,8,0"
+                            Padding="8,4"
+                            CornerRadius="4"
+                            Background="#AA0F1216"
+                            BorderBrush="#66333A42"
+                            BorderThickness="1">
+                        <TextBlock x:Name="MapCoordinateText"
+                                   Foreground="#FFE5ECF3"
+                                   FontSize="12"
+                                   Text="坐标: -" />
+                    </Border>
+
+                    <TextBlock Text="暂无地图预览，点击“加载地图预览”。">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource VslEmptyHintStyle}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMapPreview}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Grid>
+        </ui:Card>
+    </Grid>
+</UserControl>

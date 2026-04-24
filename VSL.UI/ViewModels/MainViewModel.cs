@@ -4,6 +4,8 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using VSL.Application;
@@ -25,6 +27,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly IProfileService _profileService;
     private readonly IServerConfigService _serverConfigService;
     private readonly ISaveService _saveService;
+    private readonly IMapPreviewService _mapPreviewService;
     private readonly IModService _modService;
     private readonly IServerProcessService _serverProcessService;
     private readonly IVs2QQProcessService _vs2qqProcessService;
@@ -45,6 +48,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly AsyncRelayCommand _saveCommonConfigCommand;
     private readonly AsyncRelayCommand _saveRawJsonCommand;
     private readonly AsyncRelayCommand _backupSaveCommand;
+    private readonly AsyncRelayCommand _loadMapPreviewCommand;
     private readonly AsyncRelayCommand _saveLauncherSettingsCommand;
     private readonly AsyncRelayCommand _loadVs2QQConfigCommand;
     private readonly AsyncRelayCommand _saveVs2QQConfigCommand;
@@ -105,6 +109,18 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private string _vs2qqSuperUsersText = string.Empty;
     private bool _isVs2QQConsoleAutoFollow = true;
     private Vs2QQRuntimeStatus _vs2qqRuntimeStatus = new();
+    private string _mapPreviewSummary = "暂无地图预览。";
+    private string _mapPreviewSourcePath = string.Empty;
+    private BitmapSource? _mapPreviewColorImage;
+    private BitmapSource? _mapPreviewGrayscaleImage;
+    private int _mapPreviewDimension;
+    private int _mapPreviewMinChunkX;
+    private int _mapPreviewMinChunkZ;
+    private int _mapPreviewSamplingStep = 1;
+    private int _mapPreviewWidth;
+    private int _mapPreviewHeight;
+    private int _mapPreviewMapSizeX;
+    private int _mapPreviewMapSizeZ;
 
     public MainViewModel(
         IVersionCatalogService versionCatalogService,
@@ -113,6 +129,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         IProfileService profileService,
         IServerConfigService serverConfigService,
         ISaveService saveService,
+        IMapPreviewService mapPreviewService,
         IModService modService,
         IServerProcessService serverProcessService,
         IVs2QQProcessService vs2qqProcessService,
@@ -125,6 +142,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _profileService = profileService;
         _serverConfigService = serverConfigService;
         _saveService = saveService;
+        _mapPreviewService = mapPreviewService;
         _modService = modService;
         _serverProcessService = serverProcessService;
         _vs2qqProcessService = vs2qqProcessService;
@@ -174,6 +192,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         SetActiveSaveCommand = _setActiveSaveCommand;
         _backupSaveCommand = new AsyncRelayCommand(BackupActiveSaveAsync, () => SelectedProfile is not null);
         BackupSaveCommand = _backupSaveCommand;
+        _loadMapPreviewCommand = new AsyncRelayCommand(LoadMapPreviewAsync, () => SelectedProfile is not null && !IsBusy);
+        LoadMapPreviewCommand = _loadMapPreviewCommand;
 
         RefreshModsCommand = new AsyncRelayCommand(RefreshModsAsync, () => SelectedProfile is not null);
         ImportModZipCommand = new AsyncRelayCommand(ImportModZipAsync, () => SelectedProfile is not null);
@@ -253,6 +273,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public ICommand SetActiveSaveCommand { get; }
 
     public ICommand BackupSaveCommand { get; }
+
+    public ICommand LoadMapPreviewCommand { get; }
 
     public ICommand RefreshModsCommand { get; }
 
@@ -407,6 +429,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         {
             if (SetProperty(ref _selectedProfile, value))
             {
+                ClearMapPreview();
                 UpdateCommandStates();
                 _ = LoadSelectedProfileAsync();
             }
@@ -641,6 +664,92 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         Vs2QQRuntimeStatus.IsRunning
             ? $"运行中 (OneBot: {Vs2QQRuntimeStatus.OneBotWsUrl}, 启动时间: {Vs2QQRuntimeStatus.StartedAtUtc?.ToLocalTime():yyyy-MM-dd HH:mm:ss})"
             : "未运行";
+
+    public string MapPreviewSummary
+    {
+        get => _mapPreviewSummary;
+        private set => SetProperty(ref _mapPreviewSummary, value);
+    }
+
+    public string MapPreviewSourcePath
+    {
+        get => _mapPreviewSourcePath;
+        private set => SetProperty(ref _mapPreviewSourcePath, value);
+    }
+
+    public BitmapSource? MapPreviewColorImage
+    {
+        get => _mapPreviewColorImage;
+        private set
+        {
+            if (SetProperty(ref _mapPreviewColorImage, value))
+            {
+                OnPropertyChanged(nameof(HasMapPreview));
+            }
+        }
+    }
+
+    public BitmapSource? MapPreviewGrayscaleImage
+    {
+        get => _mapPreviewGrayscaleImage;
+        private set
+        {
+            if (SetProperty(ref _mapPreviewGrayscaleImage, value))
+            {
+                OnPropertyChanged(nameof(HasMapPreview));
+            }
+        }
+    }
+
+    public bool HasMapPreview => MapPreviewColorImage is not null && MapPreviewGrayscaleImage is not null;
+
+    public int MapPreviewDimension
+    {
+        get => _mapPreviewDimension;
+        private set => SetProperty(ref _mapPreviewDimension, value);
+    }
+
+    public int MapPreviewMinChunkX
+    {
+        get => _mapPreviewMinChunkX;
+        private set => SetProperty(ref _mapPreviewMinChunkX, value);
+    }
+
+    public int MapPreviewMinChunkZ
+    {
+        get => _mapPreviewMinChunkZ;
+        private set => SetProperty(ref _mapPreviewMinChunkZ, value);
+    }
+
+    public int MapPreviewSamplingStep
+    {
+        get => _mapPreviewSamplingStep;
+        private set => SetProperty(ref _mapPreviewSamplingStep, value);
+    }
+
+    public int MapPreviewWidth
+    {
+        get => _mapPreviewWidth;
+        private set => SetProperty(ref _mapPreviewWidth, value);
+    }
+
+    public int MapPreviewHeight
+    {
+        get => _mapPreviewHeight;
+        private set => SetProperty(ref _mapPreviewHeight, value);
+    }
+
+    public int MapPreviewMapSizeX
+    {
+        get => _mapPreviewMapSizeX;
+        private set => SetProperty(ref _mapPreviewMapSizeX, value);
+    }
+
+    public int MapPreviewMapSizeZ
+    {
+        get => _mapPreviewMapSizeZ;
+        private set => SetProperty(ref _mapPreviewMapSizeZ, value);
+    }
 
     public string ServerName { get => _serverName; set => SetProperty(ref _serverName, value); }
     public string? Ip { get => _ip; set => SetProperty(ref _ip, value); }
@@ -950,9 +1059,11 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         if (SelectedProfile is null)
         {
             UpdateCollection(Saves, []);
+            SelectedSave = null;
             UpdateCollection(Mods, []);
             UpdateCollection(WorldRules, []);
             RawJsonText = string.Empty;
+            ClearMapPreview();
             return;
         }
 
@@ -1321,6 +1432,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         if (SelectedProfile is null)
         {
             UpdateCollection(Saves, []);
+            SelectedSave = null;
             return;
         }
 
@@ -1330,6 +1442,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         {
             SelectedSave = Saves.FirstOrDefault(x => x.FullPath.Equals(SelectedProfile.ActiveSaveFile, StringComparison.OrdinalIgnoreCase))
                            ?? Saves[0];
+        }
+        else
+        {
+            SelectedSave = null;
         }
     }
 
@@ -1393,6 +1509,64 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         {
             var result = await _saveService.BackupActiveSaveAsync(SelectedProfile);
             SetMessage(result.IsSuccess ? $"备份完成：{result.Value}" : result.Message ?? "备份失败。");
+        });
+    }
+
+    private async Task LoadMapPreviewAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync("正在读取地图并生成预览...", async () =>
+        {
+            var preferredSavePath =
+                !string.IsNullOrWhiteSpace(SelectedSave?.FullPath) && File.Exists(SelectedSave.FullPath) ? SelectedSave.FullPath
+                : !string.IsNullOrWhiteSpace(SaveFileLocation) ? SaveFileLocation
+                : SelectedProfile.ActiveSaveFile;
+
+            var result = await _mapPreviewService.LoadMapPreviewAsync(SelectedProfile, preferredSavePath);
+            if (!result.IsSuccess || result.Value is null)
+            {
+                var detail = BuildErrorMessage("地图预览加载失败。", result.Message, result.Exception);
+                ClearMapPreview(result.Message ?? "地图预览加载失败。");
+                SetMessage(detail);
+                return;
+            }
+
+            var preview = result.Value;
+            var colorImage = CreateBitmapSource(preview.ColorPixelsBgra32, preview.Width, preview.Height);
+            var grayscaleImage = CreateBitmapSource(preview.GrayscalePixelsBgra32, preview.Width, preview.Height);
+            if (colorImage is null || grayscaleImage is null)
+            {
+                ClearMapPreview("地图像素数据无效。");
+                SetMessage("地图像素数据无效，无法显示预览。");
+                return;
+            }
+
+            MapPreviewColorImage = colorImage;
+            MapPreviewGrayscaleImage = grayscaleImage;
+            MapPreviewSourcePath = preview.SaveFilePath;
+            MapPreviewDimension = preview.Dimension;
+            MapPreviewMinChunkX = preview.MinChunkX;
+            MapPreviewMinChunkZ = preview.MinChunkZ;
+            MapPreviewSamplingStep = Math.Max(1, preview.SamplingStep);
+            MapPreviewWidth = preview.Width;
+            MapPreviewHeight = preview.Height;
+            MapPreviewMapSizeX = Math.Max(0, preview.MapSizeX);
+            MapPreviewMapSizeZ = Math.Max(0, preview.MapSizeZ);
+
+            var chunkCenterOffsetX = preview.MapSizeX > 0 && preview.ChunkSize > 0 ? preview.MapSizeX / (preview.ChunkSize * 2) : 0;
+            var chunkCenterOffsetZ = preview.MapSizeZ > 0 && preview.ChunkSize > 0 ? preview.MapSizeZ / (preview.ChunkSize * 2) : 0;
+            var worldMinChunkX = preview.MinChunkX - chunkCenterOffsetX;
+            var worldMaxChunkX = preview.MaxChunkX - chunkCenterOffsetX;
+            var worldMinChunkZ = preview.MinChunkZ - chunkCenterOffsetZ;
+            var worldMaxChunkZ = preview.MaxChunkZ - chunkCenterOffsetZ;
+            MapPreviewSummary =
+                $"维度 {preview.Dimension} | 区块 {preview.ChunkCount} | X[{worldMinChunkX},{worldMaxChunkX}] Z[{worldMinChunkZ},{worldMaxChunkZ}] | 分辨率 {preview.Width}x{preview.Height} | 高度 {preview.MinTerrainHeight}-{preview.MaxTerrainHeight} | 采样 x{preview.SamplingStep}";
+
+            SetMessage(result.Message ?? "地图预览已加载。");
         });
     }
 
@@ -1637,6 +1811,48 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             BusyText = string.Empty;
             UpdateCommandStates();
         }
+    }
+
+    private void ClearMapPreview(string summary = "暂无地图预览。")
+    {
+        MapPreviewColorImage = null;
+        MapPreviewGrayscaleImage = null;
+        MapPreviewSourcePath = string.Empty;
+        MapPreviewDimension = 0;
+        MapPreviewMinChunkX = 0;
+        MapPreviewMinChunkZ = 0;
+        MapPreviewSamplingStep = 1;
+        MapPreviewWidth = 0;
+        MapPreviewHeight = 0;
+        MapPreviewMapSizeX = 0;
+        MapPreviewMapSizeZ = 0;
+        MapPreviewSummary = summary;
+    }
+
+    private static BitmapSource? CreateBitmapSource(byte[] pixels, int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            return null;
+        }
+
+        var expectedLength = checked(width * height * 4);
+        if (pixels.Length < expectedLength)
+        {
+            return null;
+        }
+
+        var bitmap = BitmapSource.Create(
+            width,
+            height,
+            96,
+            96,
+            PixelFormats.Bgra32,
+            palette: null,
+            pixels,
+            width * 4);
+        bitmap.Freeze();
+        return bitmap;
     }
 
     private static string BuildErrorMessage(string summary, string? message, Exception? ex)
@@ -2026,6 +2242,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         }
         _setActiveSaveCommand.RaiseCanExecuteChanged();
         _backupSaveCommand.RaiseCanExecuteChanged();
+        _loadMapPreviewCommand.RaiseCanExecuteChanged();
         if (RefreshModsCommand is AsyncRelayCommand refreshModsCommand)
         {
             refreshModsCommand.RaiseCanExecuteChanged();

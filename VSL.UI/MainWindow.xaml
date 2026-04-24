@@ -125,6 +125,11 @@
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Save20" />
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
+                        <ui:NavigationViewItem x:Name="NavMapPreview" Content="地图预览" Tag="mappreview" Click="NavigationItem_OnClick">
+                            <ui:NavigationViewItem.Icon>
+                                <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="Map20" />
+                            </ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
                         <ui:NavigationViewItem x:Name="NavMods" Content="Mod 管理" Tag="mods" Click="NavigationItem_OnClick">
                             <ui:NavigationViewItem.Icon>
                                 <ui:SymbolIcon Style="{StaticResource VslNavSymbolIconStyle}" Symbol="PuzzleCube20" />
@@ -170,6 +175,7 @@
                     <pages:ServerSettingsPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=settings}" />
                     <pages:AdvancedJsonPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=advancedjson}" />
                     <pages:SavesPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=saves}" />
+                    <pages:MapPreviewPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=mappreview}" />
                     <pages:ModsPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=mods}" />
                     <pages:Vs2QQConfigPage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=vs2qqconfig}" />
                     <pages:ConsolePage Visibility="{Binding SelectedNavKey, Converter={StaticResource NavKeyToVisibilityConverter}, ConverterParameter=console}" />

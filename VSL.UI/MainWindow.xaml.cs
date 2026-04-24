@@ -24,6 +24,7 @@ public partial class MainWindow : FluentWindow
             NavSettings,
             NavAdvancedJson,
             NavSaves,
+            NavMapPreview,
             NavMods,
             NavVs2QQConfig,
             NavConsole,
