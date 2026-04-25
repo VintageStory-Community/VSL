@@ -1,6 +1,9 @@
+using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Shell;
 using VSL.UI.ViewModels;
+using VSL.UI.Views.Pages;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
 
@@ -10,7 +13,6 @@ public partial class MainWindow : FluentWindow
 {
     private readonly MainViewModel _viewModel;
     private readonly ISnackbarService _snackbarService;
-    private readonly NavigationViewItem[] _allNavItems;
 
     public MainWindow(MainViewModel viewModel, ISnackbarService snackbarService)
     {
@@ -19,20 +21,6 @@ public partial class MainWindow : FluentWindow
         DataContext = _viewModel;
         InitializeComponent();
         _snackbarService.SetSnackbarPresenter(RootSnackbarPresenter);
-        _allNavItems =
-        [
-            NavVersionProfiles,
-            NavSettings,
-            NavAdvancedJson,
-            NavSaves,
-            NavMapPreview,
-            NavMods,
-            NavVs2QQConfig,
-            NavConsole,
-            NavVs2QQRunner,
-            NavAppSettings,
-            NavAbout
-        ];
         SourceInitialized += MainWindow_SourceInitialized;
         Loaded += MainWindow_Loaded;
     }
@@ -40,67 +28,46 @@ public partial class MainWindow : FluentWindow
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Loaded -= MainWindow_Loaded;
+        ContentFrame.Navigate(new VersionProfilesPage());
         await _viewModel.InitializeAsync();
     }
 
-    private void RootNavigationView_OnSelectionChanged(NavigationView sender, RoutedEventArgs args)
+    private void NavigationButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender.SelectedItem is NavigationViewItem selectedByControl &&
-            selectedByControl.Tag is string selectedTag &&
-            !string.IsNullOrWhiteSpace(selectedTag))
+        if (sender is System.Windows.Controls.Button button && button.Tag is string pageName)
         {
-            ApplyNavSelection(selectedByControl, selectedTag);
-            return;
-        }
-
-        if (args.OriginalSource is NavigationViewItem raisedItem &&
-            raisedItem.Tag is string raisedTag &&
-            !string.IsNullOrWhiteSpace(raisedTag))
-        {
-            ApplyNavSelection(raisedItem, raisedTag);
+            NavigateToPage(pageName);
         }
     }
 
-    private void NavigationItem_OnClick(object sender, RoutedEventArgs e)
+    private void NavigateToPage(string pageName)
     {
-        if (sender is NavigationViewItem item &&
-            item.Tag is string tag &&
-            !string.IsNullOrWhiteSpace(tag))
+        Type? pageType = pageName switch
         {
-            ApplyNavSelection(item, tag);
+            "VersionProfilesPage" => typeof(VersionProfilesPage),
+            "ServerSettingsPage" => typeof(ServerSettingsPage),
+            "AdvancedJsonPage" => typeof(AdvancedJsonPage),
+            "SavesPage" => typeof(SavesPage),
+            "MapPreviewPage" => typeof(MapPreviewPage),
+            "ModsPage" => typeof(ModsPage),
+            "Vs2QQConfigPage" => typeof(Vs2QQConfigPage),
+            "ConsolePage" => typeof(ConsolePage),
+            "Vs2QQRunnerPage" => typeof(Vs2QQRunnerPage),
+            "AppSettingsPage" => typeof(AppSettingsPage),
+            "AboutPage" => typeof(AboutPage),
+            _ => null
+        };
+
+        if (pageType != null)
+        {
+            ContentFrame.Navigate(Activator.CreateInstance(pageType));
         }
-    }
-
-    private void WindowMinimizeButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
-    private void WindowMaximizeButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState == WindowState.Maximized
-            ? WindowState.Normal
-            : WindowState.Maximized;
-    }
-
-    private void WindowCloseButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        Close();
     }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
         SourceInitialized -= MainWindow_SourceInitialized;
         ApplyComfortableResizeBorder();
-    }
-
-    private void ApplyNavSelection(NavigationViewItem activeItem, string tag)
-    {
-        _viewModel.SelectedNavKey = tag;
-        foreach (var item in _allNavItems)
-        {
-            item.IsActive = ReferenceEquals(item, activeItem);
-        }
     }
 
     private void ApplyComfortableResizeBorder()

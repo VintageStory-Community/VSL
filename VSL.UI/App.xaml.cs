@@ -40,6 +40,14 @@ public partial class App : System.Windows.Application
             var services = new ServiceCollection();
             services.AddVslInfrastructure();
             services.AddSingleton<ISnackbarService, SnackbarService>();
+            
+            services.AddSingleton<VersionManagementViewModel>();
+            services.AddSingleton<ProfileManagementViewModel>();
+            services.AddSingleton<ServerControlViewModel>();
+            services.AddSingleton<ModManagementViewModel>();
+            services.AddSingleton<SaveManagementViewModel>();
+            services.AddSingleton<SettingsViewModel>();
+            services.AddSingleton<Vs2QQRunnerViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
 
@@ -66,11 +74,32 @@ public partial class App : System.Windows.Application
         {
             if (_serviceProvider is not null)
             {
-                var vm = _serviceProvider.GetService<MainViewModel>();
-                if (vm is not null)
+                var mainVm = _serviceProvider.GetService<MainViewModel>();
+                if (mainVm is not null)
                 {
-                    await vm.DisposeAsync();
+                    await mainVm.DisposeAsync();
                 }
+
+                var serverControlVm = _serviceProvider.GetService<ServerControlViewModel>();
+                if (serverControlVm is not null)
+                {
+                    await serverControlVm.DisposeAsync();
+                }
+
+                var versionVm = _serviceProvider.GetService<VersionManagementViewModel>();
+                versionVm?.Cleanup();
+
+                var profileVm = _serviceProvider.GetService<ProfileManagementViewModel>();
+                profileVm?.Cleanup();
+
+                var modVm = _serviceProvider.GetService<ModManagementViewModel>();
+                modVm?.Cleanup();
+
+                var saveVm = _serviceProvider.GetService<SaveManagementViewModel>();
+                saveVm?.Cleanup();
+
+                var settingsVm = _serviceProvider.GetService<SettingsViewModel>();
+                settingsVm?.Cleanup();
 
                 await _serviceProvider.DisposeAsync();
             }

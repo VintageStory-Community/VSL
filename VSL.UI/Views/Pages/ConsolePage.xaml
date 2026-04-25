@@ -46,7 +46,7 @@
                             <CheckBox Content="追踪"
                                       Margin="0,0,8,8"
                                       VerticalAlignment="Center"
-                                      IsChecked="{Binding IsConsoleAutoFollow}" />
+                                      IsChecked="{Binding IsAutoFollow}" />
                             <Button Content="下载"
                                     Style="{StaticResource VslToolbarButtonStyle}" Command="{Binding DownloadConsoleLogCommand}" />
                             <Button Content="清空"
@@ -83,7 +83,7 @@
                          Style="{StaticResource VslConsoleListBoxStyle}"
                          ItemContainerStyle="{StaticResource VslConsoleListBoxItemStyle}"
                          ItemsSource="{Binding ConsoleLines}"
-                         FontFamily="Consolas"
+                         FontFamily="Consolas, Microsoft YaHei UI, SimHei, Arial, sans-serif"
                          FontSize="12"
                          Foreground="#D4D4D4"
                          BorderThickness="0"

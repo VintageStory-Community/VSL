@@ -7,19 +7,21 @@ namespace VSL.UI.Views.Pages;
 
 public partial class Vs2QQRunnerPage : UserControl
 {
-    private MainViewModel? _boundViewModel;
+    private Vs2QQRunnerViewModel? _boundViewModel;
 
     public Vs2QQRunnerPage()
     {
         InitializeComponent();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        DataContextChanged += OnDataContextChanged;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        AttachToViewModel(DataContext as MainViewModel);
+        if (Window.GetWindow(this) is MainWindow mainWindow && mainWindow.DataContext is MainViewModel vm)
+        {
+            AttachToViewModel(vm.Vs2QQRunner);
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -27,13 +29,7 @@ public partial class Vs2QQRunnerPage : UserControl
         DetachFromViewModel();
     }
 
-    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-    {
-        DetachFromViewModel();
-        AttachToViewModel(e.NewValue as MainViewModel);
-    }
-
-    private void AttachToViewModel(MainViewModel? vm)
+    private void AttachToViewModel(Vs2QQRunnerViewModel? vm)
     {
         if (vm is null)
         {
@@ -41,6 +37,7 @@ public partial class Vs2QQRunnerPage : UserControl
         }
 
         _boundViewModel = vm;
+        DataContext = vm;
         _boundViewModel.Vs2QQConsoleLines.CollectionChanged += OnConsoleLinesChanged;
     }
 

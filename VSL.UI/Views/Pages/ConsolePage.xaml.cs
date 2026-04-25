@@ -1,13 +1,13 @@
-using System.Windows.Controls;
 using System.Collections.Specialized;
 using System.Windows;
+using System.Windows.Controls;
 using VSL.UI.ViewModels;
 
 namespace VSL.UI.Views.Pages;
 
 public partial class ConsolePage : UserControl
 {
-    private MainViewModel? _boundViewModel;
+    private ServerControlViewModel? _boundViewModel;
 
     public ConsolePage()
     {
@@ -19,7 +19,10 @@ public partial class ConsolePage : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        AttachToViewModel(DataContext as MainViewModel);
+        if (Window.GetWindow(this) is MainWindow mainWindow && mainWindow.DataContext is MainViewModel vm)
+        {
+            AttachToViewModel(vm.ServerControl);
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -29,11 +32,9 @@ public partial class ConsolePage : UserControl
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        DetachFromViewModel();
-        AttachToViewModel(e.NewValue as MainViewModel);
     }
 
-    private void AttachToViewModel(MainViewModel? vm)
+    private void AttachToViewModel(ServerControlViewModel? vm)
     {
         if (vm is null)
         {
@@ -41,6 +42,7 @@ public partial class ConsolePage : UserControl
         }
 
         _boundViewModel = vm;
+        DataContext = vm;
         _boundViewModel.ConsoleLines.CollectionChanged += OnConsoleLinesChanged;
     }
 
@@ -57,7 +59,7 @@ public partial class ConsolePage : UserControl
 
     private void OnConsoleLinesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (_boundViewModel?.IsConsoleAutoFollow != true)
+        if (_boundViewModel?.IsAutoFollow != true)
         {
             return;
         }

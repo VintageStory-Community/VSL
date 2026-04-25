@@ -3,6 +3,7 @@ bin/
 obj/
 dist/
 artifacts/
+publish/
 
 # Test and temporary outputs
 TestResults/

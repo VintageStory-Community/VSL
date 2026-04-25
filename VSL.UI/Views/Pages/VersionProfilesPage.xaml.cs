@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using VSL.UI.ViewModels;
 
 namespace VSL.UI.Views.Pages;
 
@@ -10,10 +12,19 @@ public partial class VersionProfilesPage : UserControl
     public VersionProfilesPage()
     {
         InitializeComponent();
-        Loaded += (_, _) => ScheduleListColumnResize();
+        Loaded += OnLoaded;
         SizeChanged += (_, _) => ScheduleListColumnResize();
         InstalledVersionsList.SizeChanged += (_, _) => ResizeListColumns();
         ProfilesList.SizeChanged += (_, _) => ResizeListColumns();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is MainWindow mainWindow && mainWindow.DataContext is MainViewModel vm)
+        {
+            DataContext = vm.VersionManagement;
+        }
+        ScheduleListColumnResize();
     }
 
     private void ScheduleListColumnResize()

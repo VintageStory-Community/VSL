@@ -21,7 +21,16 @@ public partial class MapPreviewPage : UserControl
     public MapPreviewPage()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
         ResetCoordinateDisplay();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is MainWindow mainWindow && mainWindow.DataContext is MainViewModel vm)
+        {
+            DataContext = vm.SaveManagement;
+        }
     }
 
     private void MapPreviewTabs_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -155,7 +164,7 @@ public partial class MapPreviewPage : UserControl
 
     private void UpdateCoordinateDisplay(ScrollViewer scrollViewer, ScaleTransform scaleTransform, Point pointer)
     {
-        if (DataContext is not MainViewModel vm
+        if (DataContext is not SaveManagementViewModel vm
             || !vm.HasMapPreview
             || vm.MapPreviewWidth <= 0
             || vm.MapPreviewHeight <= 0)
@@ -200,7 +209,6 @@ public partial class MapPreviewPage : UserControl
         {
             quotient--;
         }
-
         return quotient;
     }
 }
