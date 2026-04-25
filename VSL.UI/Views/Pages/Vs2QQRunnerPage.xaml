@@ -69,7 +69,7 @@
                              Style="{StaticResource VslConsoleListBoxStyle}"
                              ItemContainerStyle="{StaticResource VslConsoleListBoxItemStyle}"
                              ItemsSource="{Binding Vs2QQConsoleLines}"
-                             FontFamily="Consolas"
+                             FontFamily="Consolas, Microsoft YaHei UI, SimHei, Arial, sans-serif"
                              FontSize="12"
                              Foreground="#D4D4D4"
                              BorderThickness="0"
